@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClInclude Include="Code\InitialHeaderMadeByJuho.h" />
+    <ClInclude Include="Code\stdafx.h" />
+    <ClInclude Include="Code\Win32_HandmadeHero.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Code\Win32_Handmade.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Misc\build.bat" />
+    <None Include="Misc\shell.bat" />
+    <None Include="buildandcompile.bat" />
+  </ItemGroup>
+</Project>
