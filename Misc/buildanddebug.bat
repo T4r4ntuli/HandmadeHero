@@ -1,5 +1,5 @@
 @echo off
-call Misc\shell
+call shell
 call build
 :try_again
 set /P "choice=Enter 1 to debug, 2 to run program, 3 to exit: "
