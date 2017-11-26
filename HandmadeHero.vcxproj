@@ -30,8 +30,8 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="buildanddebug.bat" />
     <None Include="Misc\build.bat" />
+    <None Include="Misc\buildanddebug.bat" />
     <None Include="Misc\shell.bat" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

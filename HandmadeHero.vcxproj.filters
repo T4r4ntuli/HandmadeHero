@@ -11,6 +11,6 @@
   <ItemGroup>
     <None Include="Misc\build.bat" />
     <None Include="Misc\shell.bat" />
-    <None Include="buildanddebug.bat" />
+    <None Include="Misc\buildanddebug.bat" />
   </ItemGroup>
 </Project>

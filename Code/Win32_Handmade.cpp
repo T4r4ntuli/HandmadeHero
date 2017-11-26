@@ -22,10 +22,11 @@ namespace HandmadeHero
 
     //this is global for now
     global_variable bool running;
+
     global_variable BITMAPINFO bitmapInfo;
     global_variable void *bitmapMemory;
-    global_variable HBITMAP bitmapHandle;
-    global_variable HDC bitmapDeviceContext;
+    global_variable int bitmapWidth;
+    global_variable int bitmapHeight;
 
     internal void
     Win32ResizeDIPSection(int width, int height)
@@ -33,38 +34,36 @@ namespace HandmadeHero
         //todo bullethroof this.
         // maybe don't free first, free after, then free first if that fails.
 
-        if (bitmapHandle)
+        if(bitmapMemory)
         {
-            DeleteObject(bitmapHandle);
+            VirtualFree(bitmapMemory, 0, MEM_RELEASE);
         }
 
-        if(!bitmapDeviceContext)
-        {
-            //todo Should we recreate these under certain special circumstances
-            bitmapDeviceContext = CreateCompatibleDC(0);
-        }
+        bitmapWidth = width;
+        bitmapHeight = height;
 
         bitmapInfo.bmiHeader.biSize = sizeof(bitmapInfo.bmiHeader);
-        bitmapInfo.bmiHeader.biWidth = width;
-        bitmapInfo.bmiHeader.biHeight = height;
+        bitmapInfo.bmiHeader.biWidth = bitmapWidth;
+        bitmapInfo.bmiHeader.biHeight = bitmapHeight;
         bitmapInfo.bmiHeader.biPlanes = 1;
         bitmapInfo.bmiHeader.biBitCount = 32;
         bitmapInfo.bmiHeader.biCompression = BI_RGB;
 
-        bitmapHandle = CreateDIBSection(
-            bitmapDeviceContext,
-            &bitmapInfo,
-            DIB_RGB_COLORS,
-            &bitmapMemory,
-            0, 0);
+        int bytesPerPixel = 4;
+        int bitmapMemorySize = (bitmapWidth * bitmapHeight) * bytesPerPixel;
+        bitmapMemory = VirtualAlloc(0, bitmapMemorySize, MEM_COMMIT, PAGE_READWRITE);
     }
 
     internal void
-    Win32UpdateWindow(HDC deviceContext, int x, int y, int width, int height)
+    Win32UpdateWindow(HDC deviceContext, RECT *windowRect)
     {
+        int windowWidth = windowRect->right - windowRect->left;
+        int windowHeight = windowRect->bottom - windowRect->top;
         StretchDIBits(deviceContext,
-                      x, y, width, height,
-                      x, y, width, height,
+                      /*x, y, width, height,
+                      x, y, width, height,*/
+                      0, 0, bitmapWidth, bitmapHeight,
+                      0, 0, windowWidth, windowHeight,
                       bitmapMemory,
                       &bitmapInfo,
                       DIB_RGB_COLORS,
@@ -122,7 +121,11 @@ namespace HandmadeHero
                 int y = paint.rcPaint.top;
                 int height = paint.rcPaint.bottom - x;
                 int width = paint.rcPaint.right - y;
-                Win32UpdateWindow(deviceContext, x, y, width, height);
+
+                RECT clientRect;
+                GetClientRect(windowHandle, &clientRect);
+
+                Win32UpdateWindow(deviceContext, &clientRect);
                 EndPaint(windowHandle, &paint);
             } break;
 
