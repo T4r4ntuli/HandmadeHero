@@ -10,6 +10,8 @@
 #pragma warning(disable : 4826)
 #pragma warning(disable : 4061)
 #pragma warning(disable : 4640)
+#pragma warning(disable : 4530)
+#pragma warning(disable : 4577)
 #include <stdio.h>
 #include <string>
 #include <vector>

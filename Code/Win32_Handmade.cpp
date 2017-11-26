@@ -7,10 +7,13 @@ Creation Date: 11/11/2017 4:14:20 PM
 Description:
 =============================================== */
 #include <Windows.h>
+#include "stdafx.h"
 
 #define internal static
 #define local_persist static 
 #define global_variable static 
+
+//typedef uint8_t uint8; == typedef unsigned char uint8;
 
 namespace HandmadeHero
 {
@@ -44,7 +47,7 @@ namespace HandmadeHero
 
         bitmapInfo.bmiHeader.biSize = sizeof(bitmapInfo.bmiHeader);
         bitmapInfo.bmiHeader.biWidth = bitmapWidth;
-        bitmapInfo.bmiHeader.biHeight = bitmapHeight;
+        bitmapInfo.bmiHeader.biHeight = -bitmapHeight;
         bitmapInfo.bmiHeader.biPlanes = 1;
         bitmapInfo.bmiHeader.biBitCount = 32;
         bitmapInfo.bmiHeader.biCompression = BI_RGB;
@@ -52,6 +55,33 @@ namespace HandmadeHero
         int bytesPerPixel = 4;
         int bitmapMemorySize = (bitmapWidth * bitmapHeight) * bytesPerPixel;
         bitmapMemory = VirtualAlloc(0, bitmapMemorySize, MEM_COMMIT, PAGE_READWRITE);
+
+        int pitch = width*bytesPerPixel;
+        uint8_t *row = (uint8_t *)bitmapMemory;
+        for (int y = 0; y < bitmapHeight; ++y)
+        {
+            uint8_t *pixel = (uint8_t *)row;
+            for (int x = 0; x < bitmapWidth; ++x)
+            {
+                /*                   
+                    Pixel in memory: BB GG RR xx
+                    LITTLE ENDIAN ARCHITECTURE!!
+                    0X xxRRGGBB
+                */
+                *pixel = 0;
+                ++pixel;
+
+                *pixel = 0;
+                ++pixel;
+
+                *pixel = 255;
+                ++pixel;
+
+                *pixel = 0;
+                ++pixel;
+            }
+            row += pitch;
+        }
     }
 
     internal void
