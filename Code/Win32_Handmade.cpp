@@ -14,15 +14,65 @@ Description:
 
 namespace HandmadeHero
 {
-    global_variable bool running;
     //c type struct
     typedef struct
     {
         int x = 0;
     } TestStruct, *pTestStruct;
 
+    //this is global for now
+    global_variable bool running;
+    global_variable BITMAPINFO bitmapInfo;
+    global_variable void *bitmapMemory;
+    global_variable HBITMAP bitmapHandle;
+    global_variable HDC bitmapDeviceContext;
+
+    internal void
+    Win32ResizeDIPSection(int width, int height)
+    {
+        //todo bullethroof this.
+        // maybe don't free first, free after, then free first if that fails.
+
+        if (bitmapHandle)
+        {
+            DeleteObject(bitmapHandle);
+        }
+
+        if(!bitmapDeviceContext)
+        {
+            //todo Should we recreate these under certain special circumstances
+            bitmapDeviceContext = CreateCompatibleDC(0);
+        }
+
+        bitmapInfo.bmiHeader.biSize = sizeof(bitmapInfo.bmiHeader);
+        bitmapInfo.bmiHeader.biWidth = width;
+        bitmapInfo.bmiHeader.biHeight = height;
+        bitmapInfo.bmiHeader.biPlanes = 1;
+        bitmapInfo.bmiHeader.biBitCount = 32;
+        bitmapInfo.bmiHeader.biCompression = BI_RGB;
+
+        bitmapHandle = CreateDIBSection(
+            bitmapDeviceContext,
+            &bitmapInfo,
+            DIB_RGB_COLORS,
+            &bitmapMemory,
+            0, 0);
+    }
+
+    internal void
+    Win32UpdateWindow(HDC deviceContext, int x, int y, int width, int height)
+    {
+        StretchDIBits(deviceContext,
+                      x, y, width, height,
+                      x, y, width, height,
+                      bitmapMemory,
+                      &bitmapInfo,
+                      DIB_RGB_COLORS,
+                      SRCCOPY);
+    }
+
     LRESULT CALLBACK
-        MainWindowCallBack(HWND windowHandle,
+    Win32MainWindowCallBack(HWND windowHandle,
                            UINT message,
                            WPARAM wParam,
                            LPARAM lParam)
@@ -38,7 +88,12 @@ namespace HandmadeHero
 
             case WM_SIZE:
             {
-                OutputDebugStringA("WM_SIZE\n");
+                RECT clientRect;
+                GetClientRect(windowHandle, &clientRect);
+                int width = clientRect.right - clientRect.left;
+                int height = clientRect.bottom - clientRect.top;
+
+                Win32ResizeDIPSection(width, height);
             } break;
 
             case WM_DESTROY:
@@ -67,9 +122,7 @@ namespace HandmadeHero
                 int y = paint.rcPaint.top;
                 int height = paint.rcPaint.bottom - x;
                 int width = paint.rcPaint.right - y;
-                DWORD operation = WHITENESS;
-                PatBlt(deviceContext, x, y, width, height, operation);
-
+                Win32UpdateWindow(deviceContext, x, y, width, height);
                 EndPaint(windowHandle, &paint);
             } break;
 
@@ -93,7 +146,7 @@ WinMain(HINSTANCE instance,
 
     WNDCLASS windowClass = {};
     windowClass.style = CS_OWNDC | CS_HREDRAW | CS_VREDRAW;
-    windowClass.lpfnWndProc = HandmadeHero::MainWindowCallBack;
+    windowClass.lpfnWndProc = HandmadeHero::Win32MainWindowCallBack;
     windowClass.hInstance = instance;
     //windowClass.hIcon = ;
     windowClass.lpszClassName = "HandmadeHeroWindowClass";
