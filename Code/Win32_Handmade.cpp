@@ -33,7 +33,7 @@ namespace HandmadeHero
     global_variable int bytesPerPixel = 4;
 
     internal void
-    RenderGradient(int xOffset, int yOffset)
+    RenderGradient(int xOffset, int yOffset, int timer)
     {
         int width = bitmapWidth;
         int height = bitmapHeight;
@@ -42,7 +42,7 @@ namespace HandmadeHero
         uint8_t *row = (uint8_t *)bitmapMemory;
         for (int y = 0; y < bitmapHeight; ++y)
         {
-            uint8_t *pixel = (uint8_t *)row;
+            uint32_t *pixel = (uint32_t *)row;
             for (int x = 0; x < bitmapWidth; ++x)
             {
                 /*
@@ -50,17 +50,18 @@ namespace HandmadeHero
                 LITTLE ENDIAN ARCHITECTURE!!
                 0X xxRRGGBB
                 */
-                *pixel = 0;
-                ++pixel;
+                uint8_t blue = timer < 200 ? x * y + xOffset : 0;
+                uint8_t green = (timer < 400 && timer >= 200) ? x * y + xOffset : 0;
+                uint8_t red = timer >= 400 ? x * y + xOffset : 0;
 
-                *pixel = 0;
-                ++pixel;
+                *pixel++ = ((blue << 16) | (green << 8) | (red));
 
-                *pixel = x * y + xOffset;
-                ++pixel;
+                /* 
+                with alpha
+                uint8_t alpha = x * y + xOffset;
 
-                *pixel = 0;
-                ++pixel;
+                *pixel++ = ((blue << 24) | (green << 16) | (red << 8) | alpha);
+                */
             }
             row += pitch;
         }
@@ -91,7 +92,7 @@ namespace HandmadeHero
         bitmapMemory = VirtualAlloc(0, bitmapMemorySize, MEM_COMMIT, PAGE_READWRITE);
 
         //todo: Probably clear this to black
-        RenderGradient(0, 0);
+        RenderGradient(0, 0, 0);
     }
 
     internal void
@@ -213,6 +214,7 @@ WinMain(HINSTANCE instance,
         {
             int xOffset = 0;
             int yOffset = 0;
+            int frameTimer = 0;
 
             HandmadeHero::running = true;
             while (HandmadeHero::running)
@@ -228,7 +230,7 @@ WinMain(HINSTANCE instance,
                     DispatchMessage(&message);
                 }
 
-                HandmadeHero::RenderGradient(xOffset, yOffset);
+                HandmadeHero::RenderGradient(xOffset, yOffset, frameTimer);
 
                 HDC deviceContext = GetDC(windowHandle);
                 RECT clientRect;
@@ -237,6 +239,8 @@ WinMain(HINSTANCE instance,
                 ReleaseDC(windowHandle, deviceContext);
 
                 ++xOffset;
+                ++frameTimer;
+                frameTimer = frameTimer < 600 ? frameTimer + 1 : 0;
             }
         } else
         {
