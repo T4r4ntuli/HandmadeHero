@@ -30,6 +30,41 @@ namespace HandmadeHero
     global_variable void *bitmapMemory;
     global_variable int bitmapWidth;
     global_variable int bitmapHeight;
+    global_variable int bytesPerPixel = 4;
+
+    internal void
+    RenderGradient(int xOffset, int yOffset)
+    {
+        int width = bitmapWidth;
+        int height = bitmapHeight;
+
+        int pitch = width*bytesPerPixel;
+        uint8_t *row = (uint8_t *)bitmapMemory;
+        for (int y = 0; y < bitmapHeight; ++y)
+        {
+            uint8_t *pixel = (uint8_t *)row;
+            for (int x = 0; x < bitmapWidth; ++x)
+            {
+                /*
+                Pixel in memory: BB GG RR xx
+                LITTLE ENDIAN ARCHITECTURE!!
+                0X xxRRGGBB
+                */
+                *pixel = 0;
+                ++pixel;
+
+                *pixel = 0;
+                ++pixel;
+
+                *pixel = x * y + xOffset;
+                ++pixel;
+
+                *pixel = 0;
+                ++pixel;
+            }
+            row += pitch;
+        }
+    }
 
     internal void
     Win32ResizeDIPSection(int width, int height)
@@ -52,43 +87,18 @@ namespace HandmadeHero
         bitmapInfo.bmiHeader.biBitCount = 32;
         bitmapInfo.bmiHeader.biCompression = BI_RGB;
 
-        int bytesPerPixel = 4;
         int bitmapMemorySize = (bitmapWidth * bitmapHeight) * bytesPerPixel;
         bitmapMemory = VirtualAlloc(0, bitmapMemorySize, MEM_COMMIT, PAGE_READWRITE);
 
-        int pitch = width*bytesPerPixel;
-        uint8_t *row = (uint8_t *)bitmapMemory;
-        for (int y = 0; y < bitmapHeight; ++y)
-        {
-            uint8_t *pixel = (uint8_t *)row;
-            for (int x = 0; x < bitmapWidth; ++x)
-            {
-                /*                   
-                    Pixel in memory: BB GG RR xx
-                    LITTLE ENDIAN ARCHITECTURE!!
-                    0X xxRRGGBB
-                */
-                *pixel = 0;
-                ++pixel;
-
-                *pixel = 0;
-                ++pixel;
-
-                *pixel = 255;
-                ++pixel;
-
-                *pixel = 0;
-                ++pixel;
-            }
-            row += pitch;
-        }
+        //todo: Probably clear this to black
+        RenderGradient(0, 0);
     }
 
     internal void
-    Win32UpdateWindow(HDC deviceContext, RECT *windowRect)
+    Win32UpdateWindow(HDC deviceContext, RECT *clientRect)
     {
-        int windowWidth = windowRect->right - windowRect->left;
-        int windowHeight = windowRect->bottom - windowRect->top;
+        int windowWidth = clientRect->right - clientRect->left;
+        int windowHeight = clientRect->bottom - clientRect->top;
         StretchDIBits(deviceContext,
                       /*x, y, width, height,
                       x, y, width, height,*/
@@ -201,16 +211,32 @@ WinMain(HINSTANCE instance,
             0);
         if (windowHandle)
         {
-            MSG message;
+            int xOffset = 0;
+            int yOffset = 0;
+
             HandmadeHero::running = true;
             while (HandmadeHero::running)
             {
-                BOOL messageResult = GetMessage(&message, 0, 0, 0);
-                if (messageResult > 0)
+                MSG message;
+                while (PeekMessage(&message, 0, 0, 0, PM_REMOVE))
                 {
+                    if (message.message == WM_QUIT)
+                    {
+                        HandmadeHero::running = false;
+                    }
                     TranslateMessage(&message);
                     DispatchMessage(&message);
-                } else { break; }
+                }
+
+                HandmadeHero::RenderGradient(xOffset, yOffset);
+
+                HDC deviceContext = GetDC(windowHandle);
+                RECT clientRect;
+                GetClientRect(windowHandle, &clientRect);
+                HandmadeHero::Win32UpdateWindow(deviceContext, &clientRect);
+                ReleaseDC(windowHandle, deviceContext);
+
+                ++xOffset;
             }
         } else
         {
