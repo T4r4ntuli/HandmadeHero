@@ -8,8 +8,13 @@ Description:
 =============================================== */
 #include <Windows.h>
 
+#define internal static
+#define local_persist static 
+#define global_variable static 
+
 namespace HandmadeHero
 {
+    global_variable bool running;
     //c type struct
     typedef struct
     {
@@ -38,12 +43,14 @@ namespace HandmadeHero
 
             case WM_DESTROY:
             {
-                OutputDebugStringA("WM_DESTROY\n");
+                running = false;
+                //Handle this as an error
             } break;
 
             case WM_CLOSE:
             {
-                OutputDebugStringA("WM_CLOSE\n");
+                //Handle this with a message to the user
+                running = false;
             } break;
 
             case WM_ACTIVATEAPP:
@@ -109,7 +116,8 @@ WinMain(HINSTANCE instance,
         if (windowHandle)
         {
             MSG message;
-            for (;;)
+            HandmadeHero::running = true;
+            while (HandmadeHero::running)
             {
                 BOOL messageResult = GetMessage(&message, 0, 0, 0);
                 if (messageResult > 0)
